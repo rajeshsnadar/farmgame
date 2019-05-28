@@ -1,10 +1,5 @@
 <?php
-	echo "<pre>";
-	//print_r($fed_data);
-	print_r($this->session->userdata('round'));
-	print_r($this->session->userdata('feed_history'));
-	echo "</pre>";
-
+	$feed_history = $this->session->userdata('feed_history');
 ?>
 <!DOCTYPE html>
 <html>
@@ -31,16 +26,27 @@
 				<th>Bunny 4</th>
 			</tr>
 			<tbody>
-				<tr>
-					<td>Round 1</td>
-					<td></td>
-					<td></td>
-					<td></td>
-					<td></td>
-					<td></td>
-					<td></td>
-					<td></td>
-				</tr>
+				<?php 
+				$srno=0;
+				if ( !empty($feed_history) ){
+					foreach ($feed_history as $key => $value) {						
+						echo "
+							<tr>
+								<td>Round ".++$srno ."</td>
+								<td>".@$value[0]."</td>
+								<td>".@$value[1]."</td>
+								<td>".@$value[2]."</td>
+								<td>".@$value[3]."</td>
+								<td>".@$value[4]."</td>
+								<td>".@$value[5]."</td>
+								<td>".@$value[6]."</td>
+							</tr>
+						";
+					}
+				}
+					
+				?>
+				
 			</tbody>
 		</table>
 	</div>
