@@ -61,13 +61,15 @@
 			<input type="hidden" name="died" value='<?=$died; ?>' />
 			<input type="hidden" name="feed_history" value='<?=$feed_history; ?>' />
 			<input type="hidden" name="roundwise" value='<?=json_encode($roundwise); ?>' />
-			<?php				
+			<?php
+				$disable="";				
 				if(isset($game_over)){
 					echo "<lable>".$game_over."</lable>";
-				}else{
-					echo '<button type="submit" name="submit_farmgame" class="btn btn-default pull-right">Feed</button>	';
+					$disable="disabled";
 				}
-			?>					
+
+			?>	
+			<button type="submit" name="submit_farmgame" <?php echo $disable; ?> class="btn btn-default pull-right">Feed</button>				
 		</form>
 		<form action="<?=base_url('farmgame/reset_fed');?>" method="post" name="reset_farmgame" id="reset_farmgame">
 			<button type="submit" name="submit_farmgame" class="btn btn-default ">Reset Feed</button>			

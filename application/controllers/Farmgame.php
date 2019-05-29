@@ -15,7 +15,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Farmgame extends CI_Controller {
 
-	private $participants = array(//initial array
+	//Initial array of participants with status and count
+	private $participants = array(
 		"0"=>array("status"=>"","count"=>1),//farmer
 		"1"=>array("status"=>"","count"=>1),//cow1
 		"2"=>array("status"=>"","count"=>1),//cow2
@@ -24,8 +25,7 @@ class Farmgame extends CI_Controller {
 		"5"=>array("status"=>"","count"=>1),//bunny3
 		"6"=>array("status"=>"","count"=>1),//bunny4
 	);
-
-
+	//This array will hold the dead participants 
 	private $died=array();
 
 	function __construct(){
@@ -53,6 +53,13 @@ class Farmgame extends CI_Controller {
 		}		
 		$this->load->view("feed",$response);
 	}
+
+    /**
+    *This method holds the logic for participants feed or died.
+    *
+    *@param $feed this is an integer value genereted randomly by the system.
+    *
+    */
 
 	public function set_fed_ui($feed){	
 		$this->died=json_decode($this->input->post('died'),true);//Died array	
@@ -86,21 +93,29 @@ class Farmgame extends CI_Controller {
 					}
 				}	
 
-			if($feed==$key && $value['count'] != -1){
+			if($feed==$key && $value['count'] != -1 ){
 				$value['status']="Fed";
 				$value['count']=0;
 			}
 		}
-		$feed_data['round'] = $this->input->post('round') + 1;		
+
+		$feed_data['round'] = $this->input->post('round') + 1;	
+        if(in_array(0, $this->died) ){//to check if farmer is died or not
+            $feed_data['game_over']="Farmer died! Game Over.";
+            foreach ($this->participants as $key => &$value) {
+                if($key!=0)
+                {
+                    $value['status']="";
+                }
+            }
+        }
+        else if( $feed_data['round']==50){// Check if 50 rounds are over or not.
+            $feed_data['game_over']="You won!";
+        }	
 		$feed_data['died']= json_encode($this->died);
 		$feed_data['feed_history']= json_encode($this->participants);
 		$feed_data['roundwise'][$feed_data['round']][]=$feed_data['feed_history'];
-		if(in_array(0, $this->died) ){//to check if farmer is died or not
-			$feed_data['game_over']="Farmer died! Game Over.";
-		}
-		else if( $feed_data['round']==50){// Check if 50 rounds are over or not.
-			$feed_data['game_over']="You won!";
-		}
+		
 		return $feed_data;
 	}
 	public function reset_fed(){
