@@ -15,16 +15,18 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Farmgame extends CI_Controller {
 
-	private $participants = array(
-		0=>0,//farmer
-		1=>0,//cow1
-		2=>0,//cow2
-		3=>0,//bunny1
-		4=>0,//bunny2
-		5=>0,//bunny3
-		6=>0,//bunny4
+	private $participants = array(//initial array
+		"0"=>array("status"=>"","count"=>1),//farmer
+		"1"=>array("status"=>"","count"=>1),//cow1
+		"2"=>array("status"=>"","count"=>1),//cow2
+		"3"=>array("status"=>"","count"=>1),//bunny1
+		"4"=>array("status"=>"","count"=>1),//bunny2
+		"5"=>array("status"=>"","count"=>1),//bunny3
+		"6"=>array("status"=>"","count"=>1),//bunny4
 	);
-	private $round=0;
+
+
+	private $died=array();
 
 	function __construct(){
 		parent::__construct();
@@ -32,110 +34,77 @@ class Farmgame extends CI_Controller {
 	}
 
 	public function index(){
-		$feed=rand(0,6);
+		if(!empty($this->input->post('died')))
+			$this->died=json_decode($this->input->post('died'),true);//Died array	
+		$participants=array(0,1,2,3,4,5,6);//array of participants
+		$active_participants=array_diff($participants,$this->died);//getting the diffrence array between died and participants
+		$feed=array_rand($active_participants,1);
+		/*Default 1st round data*/
 		$response=array();
+		$response['round']=1;
+		$response['died']=json_encode(array());
+		$this->participants[$feed]['count']=0;
+		$this->participants[$feed]['status']="Fed";
+		$response['feed_history']=json_encode($this->participants);
+		$response['roundwise'][$response['round']][]=$response['feed_history'];
+		/*End Default 1st round data*/
 		if(strtoupper($this->input->server('REQUEST_METHOD'))=="POST"){
-			$response['fed_data']=$this->set_fed($feed);
-		}
+			$response=$this->set_fed_ui($feed);
+		}		
 		$this->load->view("feed",$response);
-
-	}
-	public function set_fed($feed){
-		$this->round=$this->session->userdata('round')?$this->session->userdata('round'):0;
-		if($this->round > 50 ){
-			$response["error"]=0;
-			$response["message"]="";
-			$response["disable_submit"]=True;
-			return $response;
-		} 
-				
-		if (!empty($this->session->userdata('feed_history')) ){
-			$data_history = $this->session->userdata('feed_history');			
-		}
-		$data_history[$this->round][$feed]=$this->turn_count($feed);
-		$this->session->set_userdata('feed_history',$data_history);
-
-		$this->round++;
-		$this->session->set_userdata('round',$this->round);
-		
-		return $data_history;
 	}
 
-	public function turn_count($feed){
-		if( !empty($this->session->userdata('turn_count')) ){
-			$turn_count=$this->session->userdata('turn_count');
-			$died_paricipant=$this->session->userdata('died');
-
-			foreach ($turn_count as $key => $value) {
-				//exit;
-				if($feed==$key){
-					$turn_count[$key]=0;
-				}else{
-					$turn_count[$key]=$value+1;
+	public function set_fed_ui($feed){	
+		$this->died=json_decode($this->input->post('died'),true);//Died array	
+		$this->participants=json_decode($this->input->post('feed_history'),true);//Last participants array with count
+		$feed_data['roundwise']=json_decode($this->input->post('roundwise'),true);//History of feed roudwise
+		foreach ($this->participants as $key => &$value) {
+				$value['status']="";
+				if($value['count'] != -1){
+					$value['count']=$value['count']+1;
 				}
-				if($feed==0){
-					if($turn_count[$key] > 15){
-						$died_paricipant[$feed]=$feed;
-					}
-				}elseif($feed == 1 || $feed == 2){
-					if($turn_count[$key] > 10){
-						$died_paricipant[$feed]=$feed;
-					}
-				}elseif( $feed == 3 || $feed == 4 || $feed == 5 || $feed == 6 ){
-					if($turn_count[$key] > 8){
-						$died_paricipant[$feed]=$feed;
+				if($key==0){
+					if($value['count'] > 15 ){
+						$this->died[$key]=$key;
+						$value['status']="Died";
+						$value['count'] = -1;
+						break;					
 					}
 				}
-
-				
-				
-			}
-			echo "<pre>";
-			print_r($died_paricipant);
-			echo "</pre>";
-			echo "<pre>";
-			print_r($turn_count);
-			echo "</pre>";
-
-
-			$fed_text="Fed";
-			if (!empty($died_paricipant)){
-				
-					if(in_array($feed, $died_paricipant)  ){
-						$fed_text= "Died";
+				if($key==1 || $key==2){
+					if($value['count'] > 10  ){
+						$this->died[$key]=$key;
+						$value['status']="Died";
+						$value['count']= -1;					
 					}
-				
-			}
+				}
+				if($key==3 || $key==4 || $key==5 || $key==6 ){				
+					if($value['count'] >8  ){
+						$this->died[$key]=$key;
+						$value['status']="Died";
+						$value['count']= -1;					
+					}
+				}	
 
-			$this->session->set_userdata('died',$died_paricipant );			
-			$this->session->set_userdata('turn_count',$turn_count);
-
-			return $fed_text;
-		}else{
-			//echo "Rajesh";
-			$turn_count=$this->participants;
-			foreach ($turn_count as $key => $value) {
-				if($feed!=$key){					
-					$turn_count[$key]=$this->participants[$key]+1;					
-				}				
+			if($feed==$key && $value['count'] != -1){
+				$value['status']="Fed";
+				$value['count']=0;
 			}
-			print_r($turn_count);
-			$this->session->set_userdata('turn_count',$turn_count);
-			$this->session->set_userdata('died',array() );
-			return "Fed";
 		}
-		
+		$feed_data['round'] = $this->input->post('round') + 1;		
+		$feed_data['died']= json_encode($this->died);
+		$feed_data['feed_history']= json_encode($this->participants);
+		$feed_data['roundwise'][$feed_data['round']][]=$feed_data['feed_history'];
+		if(in_array(0, $this->died) ){//to check if farmer is died or not
+			$feed_data['game_over']="Farmer died! Game Over.";
+		}
+		else if( $feed_data['round']==50){// Check if 50 rounds are over or not.
+			$feed_data['game_over']="You won!";
+		}
+		return $feed_data;
 	}
-
 	public function reset_fed(){
-		$this->session->set_userdata('feed_history','');
-			$this->session->set_userdata('turn_count','');
-
-		$this->session->set_userdata('died',array());
-		$this->session->set_userdata('round',0);
 		redirect('farmgame','refresh');
-
 	}
 	
 }
-
